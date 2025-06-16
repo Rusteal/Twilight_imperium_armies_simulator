@@ -1,3 +1,5 @@
+import copy
+
 class Ship:
     def __init__(self, name: str, combat: int, cost: float, move: int, hits: int = 1, capacity: int= 0, 
                  sustain_damage: bool = False, 
@@ -22,6 +24,23 @@ class Ship:
     def upgrade(self, upgrade_factor):
         # Default upgrade behavior (can be overwritten by subclasses)
         self.hit_value += upgrade_factor
+        
+    def copy(self):
+        return Ship(
+            name=self.name,
+            combat=self.combat,
+            cost=self.cost,
+            move=self.move,
+            hits=self.hits,
+            capacity=self.capacity,
+            sustain_damage=self.sustain_damage,
+            bombardment=self.bombardment,
+            bombardment_hits=self.bombardment_hits,
+            bombardment_combat=self.bombardment_combat,
+            anti_fighter_barrage=self.anti_fighter_barrage,
+            anti_fighter_hits=self.anti_fighter_hits,
+            anti_fighter_combat=self.anti_fighter_combat
+        )
 
 class DefaultCruiser(Ship):
     def __init__(self):
@@ -113,6 +132,17 @@ class DefaultWarSun(Ship):
             bombardment_combat=3
         )
 
+class SpaceCannon(Ship):
+    def __init__(self):
+        super().__init__(
+            name="Space Cannon I",
+            combat=6,
+            cost=0,
+            move=0,
+        )
     
+    def upgrade(self, upgrade_factor):
+        self.combat -= 1
+        self.name += "I"
 
 
