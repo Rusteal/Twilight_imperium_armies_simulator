@@ -98,6 +98,7 @@ class DefaultFighter(Ship):
     def upgrade(self, upgrade_factor):
         self.combat -= 1
         self.move += 2
+        self.name += "I"
 
 
 class DefaultDestroyer(Ship):
