@@ -3,12 +3,12 @@ import random
 from collections import Counter
 import numpy as np
 
-# def roll_hits(army: list[Ship]) -> int:
-#     if not army:
-#         return 0
-#     dice = np.random.randint(1, 11, size=len(army))  # Roll once for all ships
-#     thresholds = np.array([ship.combat for ship in army])
-#     return int(np.sum(dice >= thresholds))  # Count how many passed the combat value
+def roll_hits(army: list[Ship]) -> int:
+    if not army:
+        return 0
+    dice = np.random.randint(1, 11, size=len(army))  # Roll once for all ships
+    thresholds = np.array([ship.combat for ship in army])
+    return int(np.sum(dice >= thresholds))  # Count how many passed the combat value
 
 
 # Function to simulate a fight between two armies
@@ -25,15 +25,16 @@ def simulate_fight(armies: list[list[Ship]], n_fights=10000):
         army_1_ships = [ship.copy() for ship in army_1]
         army_2_ships = [ship.copy() for ship in army_2]
         
-        #pre fight effects
-        
         # Apply precombat effects and return armies
         army1_post, army2_post = precombat_phase(army_1_ships, army_2_ships)
-
-        while army1_post and army2_post:
+        army_1_ships, army_2_ships = army1_post, army2_post  # override once
+        
+        while army_1_ships and army_2_ships:
             # Roll a die for each ship and assign hits to the opposing army
-            army_1_hits = sum([random.randint(1, 10) >= ship.combat for ship in army_1_ships]) # should be a number
-            army_2_hits = sum([random.randint(1, 10) >= ship.combat for ship in army_2_ships])
+            # NEW CODE – fast
+            army_1_hits = roll_hits(army_1_ships)
+            army_2_hits = roll_hits(army_2_ships)
+
             
             # Assign damage to the opposing army (first use sustain damage, then weakest combat ships)
             # Remove destroyed ships, do that in the assign damage function
@@ -114,21 +115,31 @@ def assign_damage(army_ships: list[Ship], hits: int):
     return army_ships # return ships which are left after assigning hits
 
 def perform_pre_combat_effects(attacking_army: list[Ship], defending_army: list[Ship]) -> list[Ship]:
-    # Anti-Fighter Barrage
-    total_barrage_hits = 0
+    # Collect combat thresholds and number of dice to roll
+    thresholds = []
+    dice_counts = []
+
     for ship in attacking_army:
         if ship.anti_fighter_barrage:
-            for _ in range(ship.anti_fighter_hits):
-                if random.randint(1, 10) >= ship.anti_fighter_combat:
-                    total_barrage_hits += 1
+            thresholds.extend([ship.anti_fighter_combat] * ship.anti_fighter_hits)
+            dice_counts.append(ship.anti_fighter_hits)
 
+    if thresholds:
+        rolls = np.random.randint(1, 11, size=len(thresholds))
+        thresholds = np.array(thresholds)
+        total_barrage_hits = int(np.sum(rolls >= thresholds))
+    else:
+        total_barrage_hits = 0
+
+    # Apply hits to defending fighters
     new_defenders = []
     fighter_hits_left = total_barrage_hits
     for ship in defending_army:
         if fighter_hits_left > 0 and isinstance(ship, DefaultFighter):
             fighter_hits_left -= 1
-            continue
+            continue  # Remove fighter
         new_defenders.append(ship)
+
     return new_defenders
 
 def perform_space_cannon_fire(army_with_cannon: list[Ship], target_army: list[Ship]) -> list[Ship]:
