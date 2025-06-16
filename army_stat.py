@@ -48,24 +48,26 @@ def get_statistics_simulation(army: list[Ship], num_simulations=10000):
     
     # Calculate the total capacity
     total_capacity = sum([ship.capacity for ship in army])
+    total_cost = sum([ship.cost for ship in army])
     
     # Return the statistics as a formatted string
     statistics = f"""
     Army Statistics (Simulation-based):
     ----------------
-    Mean Hits: {mean_total_hits}
-    Variance of Hits: {variance_total_hits}
-    Standard Deviation of Hits: {std_dev_total_hits}
-    1% Quantile of Hits: {quantiles_hits[0]}
-    10% Quantile of Hits: {quantiles_hits[1]}
-    25% Quantile of Hits: {quantiles_hits[2]}
-    33% Quantile of Hits: {quantiles_hits[3]}
-    50% Quantile of Hits (Median): {quantiles_hits[4]}
-    66% Quantile of Hits: {quantiles_hits[5]}
-    75% Quantile of Hits: {quantiles_hits[6]}
-    90% Quantile of Hits: {quantiles_hits[7]}
-    99% Quantile of Hits: {quantiles_hits[8]}
+    Mean Hits: {mean_total_hits:.2f}
+    Variance of Hits: {variance_total_hits:.2f}
+    Standard Deviation of Hits: {std_dev_total_hits:.2f}
+    1% Quantile of Hits: {quantiles_hits[0]:.2f}
+    10% Quantile of Hits: {quantiles_hits[1]:.2f}
+    25% Quantile of Hits: {quantiles_hits[2]:.2f}
+    33% Quantile of Hits: {quantiles_hits[3]:.2f}
+    50% Quantile of Hits (Median): {quantiles_hits[4]:.2f}
+    66% Quantile of Hits: {quantiles_hits[5]:.2f}
+    75% Quantile of Hits: {quantiles_hits[6]:.2f}
+    90% Quantile of Hits: {quantiles_hits[7]:.2f}
+    99% Quantile of Hits: {quantiles_hits[8]:.2f}
     
+    Army Cost: {total_cost}
     Army Health (Number of Ships + Sustain Damage): {army_health}
     Army Movement (Lowest Movement Value): {lowest_movement}
     Army Capacity (Total Capacity of Ships): {total_capacity}
@@ -111,24 +113,26 @@ def get_statistics_normal(army: list[Ship], use_truncated_normal=False):
     
     # Calculate the total capacity
     total_capacity = sum([ship.capacity for ship in army])
-    
+    total_cost = sum([ship.cost for ship in army])
+
     # Return the statistics as a formatted string
     statistics = f"""
     Army Statistics (Normal Approximation):
     ----------------
-    Mean Hits: {total_mean_hits}
-    Variance of Hits: {total_variance_hits}
-    Standard Deviation of Hits: {total_std_dev_hits}
-    1% Quantile of Hits: {quantiles_hits[0]}
-    10% Quantile of Hits: {quantiles_hits[1]}
-    25% Quantile of Hits: {quantiles_hits[2]}
-    33% Quantile of Hits: {quantiles_hits[3]}
-    50% Quantile of Hits (Median): {quantiles_hits[4]}
-    66% Quantile of Hits: {quantiles_hits[5]}
-    75% Quantile of Hits: {quantiles_hits[6]}
-    90% Quantile of Hits: {quantiles_hits[7]}
-    99% Quantile of Hits: {quantiles_hits[8]}
+    Mean Hits: {total_mean_hits:.2f}
+    Variance of Hits: {total_variance_hits:.2f}
+    Standard Deviation of Hits: {total_std_dev_hits:.2f}
+    1% Quantile of Hits: {quantiles_hits[0]:.2f}
+    10% Quantile of Hits: {quantiles_hits[1]:.2f}
+    25% Quantile of Hits: {quantiles_hits[2]:.2f}
+    33% Quantile of Hits: {quantiles_hits[3]:.2f}
+    50% Quantile of Hits (Median): {quantiles_hits[4]:.2f}
+    66% Quantile of Hits: {quantiles_hits[5]:.2f}
+    75% Quantile of Hits: {quantiles_hits[6]:.2f}
+    90% Quantile of Hits: {quantiles_hits[7]:.2f}
+    99% Quantile of Hits: {quantiles_hits[8]:.2f}
     
+    Army Cost: {total_cost}
     Army Health (Number of Ships + Sustain Damage): {army_health}
     Army Movement (Lowest Movement Value): {lowest_movement}
     Army Capacity (Total Capacity of Ships): {total_capacity}

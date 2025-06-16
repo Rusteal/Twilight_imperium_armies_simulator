@@ -5,6 +5,8 @@ from PyQt6.QtWidgets import (
     QTabWidget, QScrollArea, QGroupBox
 )
 from Ships import *  # Assuming all DefaultShip classes are defined there
+from fight_simulation import simulate_fight
+from army_stat import get_statistics_normal, get_statistics_simulation
 
 ship_classes = [
     DefaultCruiser,
@@ -48,6 +50,7 @@ class ArmyTab(QWidget):
         layout.addLayout(ship_controls)
 
         analyse_btn = QPushButton("Analyse")
+        analyse_btn.clicked.connect(self.analyse_army)
         layout.addWidget(analyse_btn)
 
         self.output = QTextEdit()
@@ -73,6 +76,13 @@ class ArmyTab(QWidget):
     def clear_army(self):
         self.army.clear()
         self.army_list.clear()
+
+    def analyse_army(self):
+        simulation =  get_statistics_simulation(self.army)
+        normal = get_statistics_normal(self.army)
+        normal_truncated = get_statistics_normal(self.army, use_truncated_normal=True)
+        result = "Simulated statistics\n" + simulation + "\n Normal approximation Statistic:\n" + normal + "\n Normal trancated:\n" + normal_truncated 
+        self.output.setPlainText(result)
 
 class SimulateTab(QWidget):
     def __init__(self):
@@ -138,6 +148,7 @@ class SimulateTab(QWidget):
         layout.addLayout(armies_layout)
 
         simulate_btn = QPushButton("Simulate Battle")
+        simulate_btn.clicked.connect(self.simulate_battle)
         layout.addWidget(simulate_btn)
 
         self.output = QTextEdit()
@@ -167,6 +178,10 @@ class SimulateTab(QWidget):
         else:
             self.army2.clear()
             self.army2_list.clear()
+
+    def simulate_battle(self):
+        result = simulate_fight([self.army1, self.army2], n_fights=10000)
+        self.output.setPlainText(result)
 
 class MainWindow(QWidget):
     def __init__(self):
