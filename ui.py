@@ -2,7 +2,7 @@ import sys
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QListWidget, QTextEdit, QCheckBox, QLabel,
-    QTabWidget, QScrollArea, QGroupBox
+    QTabWidget, QScrollArea, QGroupBox, QDialog, QLineEdit
 )
 from Ships import *  # Assuming all DefaultShip classes are defined there
 from fight_simulation import simulate_fight
@@ -20,6 +20,64 @@ ship_classes = [
 
 non_upgradeable = [DefaultFlagship, DefaultWarSun]
 
+class CustomShipDialog(QDialog):
+    def __init__(self, army_callback, army_name="Army"):
+        super().__init__()
+        self.setWindowTitle(f"Add Custom Ship to {army_name}")
+        self.army_callback = army_callback
+        self.boolean_attributes = {"sustain_damage", "bombardment", "anti_fighter_barrage"}
+
+
+        self.fields = {}
+        layout = QVBoxLayout()
+
+        attributes = ["name", "cost", "hits", "combat", "move", "capacity", "sustain_damage",
+                      "bombardment", "bombardment_hits", "bombardment_combat",
+                      "anti_fighter_barrage", "anti_fighter_hits", "anti_fighter_combat"]
+
+        for attr in attributes:
+            row = QHBoxLayout()
+            label = QLabel(attr.replace("_", " ").capitalize())
+            if attr in self.boolean_attributes:
+                widget = QCheckBox()
+            else:
+                widget = QLineEdit()
+            self.fields[attr] = widget
+            row.addWidget(label)
+            row.addWidget(widget)
+            layout.addLayout(row)
+
+        button_row = QHBoxLayout()
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        add_btn = QPushButton("Add")
+        add_btn.clicked.connect(self.create_ship)
+        button_row.addWidget(cancel_btn)
+        button_row.addWidget(add_btn)
+
+        layout.addLayout(button_row)
+        self.setLayout(layout)
+
+    def create_ship(self):
+        kwargs = {}
+        for key, widget in self.fields.items():
+            if isinstance(widget, QCheckBox):
+                kwargs[key] = widget.isChecked()
+            else:
+                text = widget.text().strip()
+                if text.isdigit():
+                    kwargs[key] = int(text)
+                else:
+                    try:
+                        kwargs[key] = float(text)
+                    except ValueError:
+                        kwargs[key] = text
+
+        custom_ship = Ship(**kwargs)
+        self.army_callback(custom_ship)
+        self.accept()
+        
+        
 class ArmyTab(QWidget):
     def __init__(self):
         super().__init__()
@@ -46,7 +104,15 @@ class ArmyTab(QWidget):
                 box.addWidget(upgrade_box)
             box.addWidget(add_btn)
             ship_controls.addLayout(box)
-
+        
+        custom_box = QHBoxLayout()
+        custom_label = QLabel("Custom Ship")
+        custom_btn = QPushButton("Add Custom Ship")
+        custom_btn.clicked.connect(self.open_custom_dialog)
+        custom_box.addWidget(custom_label)
+        custom_box.addWidget(custom_btn)
+        ship_controls.addLayout(custom_box)
+        
         layout.addLayout(ship_controls)
 
         analyse_btn = QPushButton("Analyse")
@@ -70,6 +136,14 @@ class ArmyTab(QWidget):
         ship = cls()
         if upgraded:
             ship.upgrade(1)
+        self.army.append(ship)
+        self.army_list.addItem(ship.name)
+        
+    def open_custom_dialog(self):
+        dialog = CustomShipDialog(self.add_custom_ship, "Army")
+        dialog.exec()
+
+    def add_custom_ship(self, ship):
         self.army.append(ship)
         self.army_list.addItem(ship.name)
 
@@ -114,10 +188,20 @@ class SimulateTab(QWidget):
                 row.addWidget(upgrade_box)
             row.addWidget(add_btn)
             army1_box.addLayout(row)
+       
+        custom_row1 = QHBoxLayout()
+        custom_label1 = QLabel("Custom Ship")
+        custom_btn1 = QPushButton("Add Custom Ship")
+        custom_btn1.clicked.connect(lambda: self.open_custom_dialog(1))
+        custom_row1.addWidget(custom_label1)
+        custom_row1.addWidget(custom_btn1)
+        army1_box.addLayout(custom_row1)
+            
+            
         clear1 = QPushButton("Clear")
         clear1.clicked.connect(lambda: self.clear_army(1))
         army1_box.addWidget(clear1)
-
+ 
         # Army 2 panel
         army2_box = QVBoxLayout()
         army2_box.addWidget(QLabel("Army 2"))
@@ -138,6 +222,15 @@ class SimulateTab(QWidget):
                 row.addWidget(upgrade_box)
             row.addWidget(add_btn)
             army2_box.addLayout(row)
+            
+        custom_row2 = QHBoxLayout()
+        custom_label2 = QLabel("Custom Ship")
+        custom_btn2 = QPushButton("Add Custom Ship")
+        custom_btn2.clicked.connect(lambda: self.open_custom_dialog(2))
+        custom_row2.addWidget(custom_label2)
+        custom_row2.addWidget(custom_btn2)
+        army2_box.addLayout(custom_row2)
+
         clear2 = QPushButton("Clear")
         clear2.clicked.connect(lambda: self.clear_army(2))
         army2_box.addWidget(clear2)
@@ -178,11 +271,30 @@ class SimulateTab(QWidget):
         else:
             self.army2.clear()
             self.army2_list.clear()
+            
+            
+    def open_custom_dialog(self, army_number):
+        name = f"Army {army_number}"
+        callback = lambda ship: self.add_custom_ship(ship, army_number)
+        dialog = CustomShipDialog(callback, name)
+        dialog.exec()
 
+    def add_custom_ship(self, ship, army_number):
+        if army_number == 1:
+            self.army1.append(ship)
+            self.army1_list.addItem(ship.name)
+        else:
+            self.army2.append(ship)
+            self.army2_list.addItem(ship.name)
+            
+            
     def simulate_battle(self):
         result = simulate_fight([self.army1, self.army2], n_fights=10000)
         self.output.setPlainText(result)
 
+
+
+    
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()

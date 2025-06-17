@@ -124,6 +124,7 @@ class DefaultWarSun(Ship):
         super().__init__(
             name="War Sun",
             combat=3,
+            hits=3,
             cost=12,
             move=2,
             capacity=6,
