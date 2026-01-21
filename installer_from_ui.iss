@@ -25,12 +25,11 @@ ArchitecturesAllowed=x64compatible
 ; the 64-bit view of the registry.
 ArchitecturesInstallIn64BitMode=x64compatible
 DisableProgramGroupPage=yes
-LicenseFile=C:\Users\Ruslan\OneDrive - University of St Andrews\Documents\projects(python)\Twilight_imperium_armies_simulator\licence_funny.txt
-; Remove the following line to run in administrative install mode (install for all users).
-PrivilegesRequired=lowest
-OutputDir=D:\
-OutputBaseFilename=mysetup
+LicenseFile=licence_funny.txt
 SetupIconFile=C:\Users\Ruslan\OneDrive - University of St Andrews\Documents\projects(python)\Twilight_imperium_armies_simulator\icon.ico
+PrivilegesRequired=lowest
+OutputDir=dist
+OutputBaseFilename=TwilightImperiumCalculatorInstaller
 SolidCompression=yes
 WizardStyle=modern
 
