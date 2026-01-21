@@ -28,8 +28,11 @@ def get_statistics_simulation(army: list[Ship], num_simulations=10000):
         simulated_hits.append(total_hits_in_simulation)
     
     # Calculate mean and variance of total hits from the simulation
-    mean_total_hits = sum([n_trials * (11 - ship.combat) / 10 for ship in army])  # sum of individual means
-    variance_total_hits = sum([n_trials * (11 - ship.combat) / 10 * (1 - (11 - ship.combat) / 10) for ship in army])  # sum of individual variances
+    mean_total_hits = sum([ship.hits * (11 - ship.combat) / 10 for ship in army])
+    variance_total_hits = sum([
+        ship.hits * ((11 - ship.combat) / 10) * (1 - (11 - ship.combat) / 10)
+        for ship in army
+    ])
     std_dev_total_hits = np.sqrt(variance_total_hits)
     
     # Calculate quantiles (1%, 10%, 25%, 50%, 75%, 90%, 99%)
