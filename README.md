@@ -105,7 +105,8 @@ If you only want to **use the simulator**, no Python installation is required.
 
 Download the Windows executable here:
 
-[INSERT EXECUTABLE DOWNLOAD LINK HERE]
+[Download Windows executable](https://github.com/Rusteal/Twilight_imperium_armies_simulator/blob/main/TI_calculator_installer.exe)
+
 
 Steps:
 1. Download the executable
