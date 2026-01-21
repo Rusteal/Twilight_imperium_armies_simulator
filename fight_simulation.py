@@ -6,9 +6,9 @@ import numpy as np
 def roll_hits(army: list[Ship]) -> int:
     if not army:
         return 0
-    dice = np.random.randint(1, 11, size=len(army))  # Roll once for all ships
-    thresholds = np.array([ship.combat for ship in army])
-    return int(np.sum(dice >= thresholds))  # Count how many passed the combat value
+    thresholds = np.concatenate([np.full(ship.hits, ship.combat) for ship in army])
+    rolls = np.random.randint(1, 11, size=thresholds.size)
+    return int(np.sum(rolls >= thresholds))
 
 
 # Function to simulate a fight between two armies
