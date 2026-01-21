@@ -2,8 +2,9 @@ import sys
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QListWidget, QTextEdit, QCheckBox, QLabel,
-    QTabWidget, QScrollArea, QGroupBox, QDialog, QLineEdit
+    QTabWidget, QScrollArea, QGroupBox, QDialog, QLineEdit, QListWidgetItem
 )
+from PyQt6.QtCore import Qt
 from Ships import *  # Assuming all DefaultShip classes are defined there
 from fight_simulation import simulate_fight
 from army_stat import get_statistics_normal, get_statistics_simulation
@@ -76,12 +77,55 @@ class CustomShipDialog(QDialog):
         custom_ship = Ship(**kwargs)
         self.army_callback(custom_ship)
         self.accept()
-        
+    
+def _ship_display_name(ship: Ship) -> str:
+    # Consistent label in list
+    return getattr(ship, "name", ship.__class__.__name__)
+
+def _add_ship_row(list_widget: QListWidget, ship: Ship, on_copy, on_delete):
+    """
+    Adds a row to a QListWidget with:
+      - ship name label
+      - Copy button
+      - Delete button
+    Stores the Ship instance in the QListWidgetItem (Qt.UserRole).
+    """
+    item = QListWidgetItem(list_widget)
+    item.setData(Qt.ItemDataRole.UserRole, ship)
+
+    row_widget = QWidget()
+    row_layout = QHBoxLayout(row_widget)
+    row_layout.setContentsMargins(6, 2, 6, 2)
+
+    name_lbl = QLabel(_ship_display_name(ship))
+    copy_btn = QPushButton("Copy")
+    del_btn = QPushButton("Delete")
+
+    copy_btn.setFixedWidth(70)
+    del_btn.setFixedWidth(70)
+
+    row_layout.addWidget(name_lbl)
+    row_layout.addStretch(1)
+    row_layout.addWidget(copy_btn)
+    row_layout.addWidget(del_btn)
+
+    # Connect actions (use the QListWidgetItem as stable reference)
+    copy_btn.clicked.connect(lambda: on_copy(item))
+    del_btn.clicked.connect(lambda: on_delete(item))
+
+    # Finish list row
+    item.setSizeHint(row_widget.sizeHint())
+    list_widget.addItem(item)
+    list_widget.setItemWidget(item, row_widget)
+
+    return item
+
         
 class ArmyTab(QWidget):
     def __init__(self):
         super().__init__()
         self.army = []
+        self.clipboard_ship = None  # remembers last ship to replicate
 
         layout = QVBoxLayout()
         self.army_list = QListWidget()
@@ -126,26 +170,81 @@ class ArmyTab(QWidget):
         scroll.setWidget(self.output)
         layout.addWidget(scroll)
 
+        btn_row = QHBoxLayout()
+
+        delete_last_btn = QPushButton("Delete Last")
+        delete_last_btn.clicked.connect(self.delete_last_ship)
+        btn_row.addWidget(delete_last_btn)
+
+        add_last_btn = QPushButton("Add Last Ship")
+        add_last_btn.clicked.connect(self.add_last_ship)
+        btn_row.addWidget(add_last_btn)
+
         clear_btn = QPushButton("Clear Army")
         clear_btn.clicked.connect(self.clear_army)
-        layout.addWidget(clear_btn)
+        btn_row.addWidget(clear_btn)
+
+        layout.addLayout(btn_row)
+
 
         self.setLayout(layout)
+
+    def _append_ship(self, ship: Ship):
+        # Update clipboard to last-added ship (your “remember last ship created” requirement)
+        # Store a safe template copy if you have copy(); otherwise store the object itself.
+        self.clipboard_ship = ship.copy() if hasattr(ship, "copy") else ship
+
+        self.army.append(ship)
+        _add_ship_row(
+            self.army_list,
+            ship,
+            on_copy=self.copy_ship_from_row,
+            on_delete=self.delete_ship_from_row
+        )    
 
     def add_ship(self, cls, upgraded):
         ship = cls()
         if upgraded:
             ship.upgrade(1)
-        self.army.append(ship)
-        self.army_list.addItem(ship.name)
+        self._append_ship(ship)
+
+    def delete_last_ship(self):
+        if not self.army:
+            return
+        self.army.pop()
+        self.army_list.takeItem(self.army_list.count() - 1)
+    
+    def add_last_ship(self):
+        if self.clipboard_ship is None:
+            return
+        new_ship = self.clipboard_ship.copy() if hasattr(self.clipboard_ship, "copy") else self.clipboard_ship
+        self._append_ship(new_ship)
+        
+    def delete_ship_from_row(self, item):
+        idx = self.army_list.row(item)
+        if idx < 0:
+            return
+        # Remove from model and UI
+        del self.army[idx]
+        self.army_list.takeItem(idx)
+
+    def copy_ship_from_row(self, item):
+        # Copy the ship in this row to clipboard AND immediately add a new instance to the list
+        ship = item.data(Qt.ItemDataRole.UserRole)
+        if ship is None:
+            return
+
+        self.clipboard_ship = ship.copy() if hasattr(ship, "copy") else ship
+        new_ship = self.clipboard_ship.copy() if hasattr(self.clipboard_ship, "copy") else self.clipboard_ship
+        self._append_ship(new_ship)
         
     def open_custom_dialog(self):
         dialog = CustomShipDialog(self.add_custom_ship, "Army")
         dialog.exec()
-
+        
     def add_custom_ship(self, ship):
-        self.army.append(ship)
-        self.army_list.addItem(ship.name)
+        self._append_ship(ship)
+
 
     def clear_army(self):
         self.army.clear()
@@ -163,6 +262,7 @@ class SimulateTab(QWidget):
         super().__init__()
         self.army1 = []
         self.army2 = []
+        self.clipboard_ship = None
 
         layout = QVBoxLayout()
 
@@ -196,7 +296,18 @@ class SimulateTab(QWidget):
         custom_row1.addWidget(custom_label1)
         custom_row1.addWidget(custom_btn1)
         army1_box.addLayout(custom_row1)
-            
+        row_btns1 = QHBoxLayout()
+
+        del_last1 = QPushButton("Delete Last")
+        del_last1.clicked.connect(lambda: self.delete_last_ship(1))
+        row_btns1.addWidget(del_last1)
+
+        add_last1 = QPushButton("Add Last Ship")
+        add_last1.clicked.connect(lambda: self.add_last_ship(1))
+        row_btns1.addWidget(add_last1)
+
+        army1_box.addLayout(row_btns1)
+
             
         clear1 = QPushButton("Clear")
         clear1.clicked.connect(lambda: self.clear_army(1))
@@ -230,7 +341,19 @@ class SimulateTab(QWidget):
         custom_row2.addWidget(custom_label2)
         custom_row2.addWidget(custom_btn2)
         army2_box.addLayout(custom_row2)
+        row_btns2 = QHBoxLayout()
 
+        del_last2 = QPushButton("Delete Last")
+        del_last2.clicked.connect(lambda: self.delete_last_ship(2))
+        row_btns2.addWidget(del_last2)
+
+        add_last2 = QPushButton("Add Last Ship")
+        add_last2.clicked.connect(lambda: self.add_last_ship(2))
+        row_btns2.addWidget(add_last2)
+
+        army2_box.addLayout(row_btns2)
+
+        
         clear2 = QPushButton("Clear")
         clear2.clicked.connect(lambda: self.clear_army(2))
         army2_box.addWidget(clear2)
@@ -257,12 +380,8 @@ class SimulateTab(QWidget):
         ship = cls()
         if upgraded:
             ship.upgrade(1)
-        if army_num == 1:
-            self.army1.append(ship)
-            self.army1_list.addItem(ship.name)
-        else:
-            self.army2.append(ship)
-            self.army2_list.addItem(ship.name)
+        self._append_ship(ship, army_num)
+
 
     def clear_army(self, army_num):
         if army_num == 1:
@@ -280,12 +399,71 @@ class SimulateTab(QWidget):
         dialog.exec()
 
     def add_custom_ship(self, ship, army_number):
-        if army_number == 1:
+        self._append_ship(ship, army_number)
+
+    def _append_ship(self, ship: Ship, army_num: int):
+        # Remember last added ship globally across both armies
+        self.clipboard_ship = ship.copy() if hasattr(ship, "copy") else ship
+
+        if army_num == 1:
             self.army1.append(ship)
-            self.army1_list.addItem(ship.name)
+            _add_ship_row(
+                self.army1_list,
+                ship,
+                on_copy=lambda item: self.copy_ship_from_row(item, 1),
+                on_delete=lambda item: self.delete_ship_from_row(item, 1),
+            )
         else:
             self.army2.append(ship)
-            self.army2_list.addItem(ship.name)
+            _add_ship_row(
+                self.army2_list,
+                ship,
+                on_copy=lambda item: self.copy_ship_from_row(item, 2),
+                on_delete=lambda item: self.delete_ship_from_row(item, 2),
+            )
+
+    def delete_last_ship(self, army_num: int):
+        if army_num == 1:
+            if not self.army1:
+                return
+            self.army1.pop()
+            self.army1_list.takeItem(self.army1_list.count() - 1)
+        else:
+            if not self.army2:
+                return
+            self.army2.pop()
+            self.army2_list.takeItem(self.army2_list.count() - 1)
+
+    def add_last_ship(self, army_num: int):
+        if self.clipboard_ship is None:
+            return
+        new_ship = self.clipboard_ship.copy() if hasattr(self.clipboard_ship, "copy") else self.clipboard_ship
+        self._append_ship(new_ship, army_num)
+
+    def delete_ship_from_row(self, item, army_num: int):
+        if army_num == 1:
+            idx = self.army1_list.row(item)
+            if idx < 0:
+                return
+            del self.army1[idx]
+            self.army1_list.takeItem(idx)
+        else:
+            idx = self.army2_list.row(item)
+            if idx < 0:
+                return
+            del self.army2[idx]
+            self.army2_list.takeItem(idx)
+
+    def copy_ship_from_row(self, item, army_num: int):
+        # Copy this ship to clipboard AND immediately add a new instance to the same army
+        ship = item.data(Qt.ItemDataRole.UserRole)
+        if ship is None:
+            return
+
+        self.clipboard_ship = ship.copy() if hasattr(ship, "copy") else ship
+        new_ship = self.clipboard_ship.copy() if hasattr(self.clipboard_ship, "copy") else self.clipboard_ship
+        self._append_ship(new_ship, army_num)
+
             
             
     def simulate_battle(self):

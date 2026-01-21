@@ -69,9 +69,23 @@ def simulate_fight(armies: list[list[Ship]], n_fights=10000):
     most_frequent_army_1 = Counter(remaining_ships["Army 1"]).most_common(1)
     most_frequent_army_2 = Counter(remaining_ships["Army 2"]).most_common(1)
 
+    if results["Army 1 Wins"] > 0 and most_frequent_army_1:
+        army_1_mode_str = " ".join(most_frequent_army_1[0][0])
+        army_1_mode_percentage = most_frequent_army_1[0][1] / results["Army 1 Wins"] * 100
+    else:
+        army_1_mode_str = "N/A (no wins)"
+        army_1_mode_percentage = 0.0
+
+    if results["Army 2 Wins"] > 0 and most_frequent_army_2:
+        army_2_mode_str = " ".join(most_frequent_army_2[0][0])
+        army_2_mode_percentage = most_frequent_army_2[0][1] / results["Army 2 Wins"] * 100
+    else:
+        army_2_mode_str = "N/A (no wins)"
+        army_2_mode_percentage = 0.0
+
+
     # Calculate the percentage of times the most frequent remaining ship combination occurred
-    army_1_mode_percentage = most_frequent_army_1[0][1] / results["Army 1 Wins"] * 100 if results["Army 1 Wins"] > 0 else 0
-    army_2_mode_percentage = most_frequent_army_2[0][1] / results["Army 2 Wins"] * 100 if results["Army 2 Wins"] > 0 else 0
+
     army_1_full_survival_rate = full_survival["Army 1"] / results["Army 1 Wins"] * 100 if results["Army 1 Wins"] > 0 else 0
     army_2_full_survival_rate = full_survival["Army 2"] / results["Army 2 Wins"] * 100 if results["Army 2 Wins"] > 0 else 0
 
@@ -83,9 +97,9 @@ def simulate_fight(armies: list[list[Ship]], n_fights=10000):
     Army 2 Wins Probability: {prob_army_2_win}
     Draw Probability: {draw_rate}
 
-    Army 1 Most Frequent Remaining Ships: {" ".join(most_frequent_army_1[0][0])} with {army_1_mode_percentage:.2f}% occurrence
+    Army 1 Most Frequent Remaining Ships: {army_1_mode_str} with {army_1_mode_percentage:.2f}% occurrence
     Army 1 Full Survival Rate: {army_1_full_survival_rate:.2f}%
-    Army 2 Most Frequent Remaining Ships: {" ".join(most_frequent_army_2[0][0])} with {army_2_mode_percentage:.2f}% occurrence
+    Army 2 Most Frequent Remaining Ships: {army_2_mode_str} with {army_2_mode_percentage:.2f}% occurrence
     Army 2 Full Survival Rate: {army_2_full_survival_rate:.2f}%
 
     """
